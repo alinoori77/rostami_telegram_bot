@@ -2,7 +2,8 @@ from PIL import Image, ImageDraw, ImageFont , ImageChops
 import arabic_reshaper
 from bidi.algorithm import get_display
 from pyrogram import Client, filters
-from config import api_hash, api_id, bot_token, font_path, watermark, gradient
+from pyrogram.types import ReplyKeyboardMarkup , KeyboardButton
+from config import api_hash, api_id, bot_token, font_path, watermark, gradient , valid_user
 import os
 app = Client(
     "mohandes_rostami_bot",
@@ -72,7 +73,7 @@ def creat_text_image(text, font_path, font_size, position, text_color):
 
     return image
 
-def trim(im):
+def trim_empty_pixel(im):
     bg = Image.new(im.mode, im.size, im.getpixel((0,0)))
     size = im.size
     
@@ -115,7 +116,46 @@ def compose_images_vertical(image1_path, image2_path, watermark, gradient):
     return composed_image
 
 
-ali =creat_text_image("علی نوری" ,(font_path) , 60 , (500,500) , "white")
-ali = trim(ali)
-ali.save("./test.png")
 
+@app.on_message(filters.command("start") , group=1)
+async def start_command (client, message):
+    if message.from_user.username not in valid_user :
+        await message.reply_text("احراز هویت موفقیت آمیز نبود . لطفا با پشتیبانی (@alinoori1377) ارتباط بگیرید.")
+    if message.from_user.username in valid_user :
+
+        text="""
+سلام لطفا یکی از گزینه های زیر را انتخاب نمایید
+"""
+        reply_button =  [
+            [
+                KeyboardButton(text = "ارسال عکس") , KeyboardButton(text = "خالی کردن حافظه")
+            ],
+            [
+                KeyboardButton(text = "ساخت استوری") , KeyboardButton(text = "ساخت پست")
+            ],
+        ]
+
+        reply_markup = ReplyKeyboardMarkup(reply_button , one_time_keyboard=True , resize_keyboard=True)
+
+        await client.send_message(chat_id=message.chat.id , text=text , reply_markup= reply_markup)
+
+@app.on_message(filters.regex("ساخت استوری"))
+async def story (client, message):
+    await client.send_message(chat_id=message.chat.id , text="لطفا عکس های استوری را ارسال کنید")
+
+@app.on_message(filters.document)
+async def download_story_pic (client, message):
+    last_message = await app.get_messages(message.chat.id, int(message.id)-1)
+    if last_message.text == "لطفا عکس های استوری را ارسال کنید":
+        print("sagh")
+
+    # if (int(message.id)-1)
+    # print(message)
+    # await client.send_message(chat_id=message.chat.id , text="بی پدر ")
+
+
+# @app.on_message(filters.regex("متن استوری را ارسال نمایید") and filters.text)
+# async def story (client, message):
+#     await client.send_message(chat_id=message.chat.id , text="بی پدر ")
+
+app.run()
