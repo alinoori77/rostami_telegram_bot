@@ -1,4 +1,4 @@
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont , ImageChops
 import arabic_reshaper
 from bidi.algorithm import get_display
 from pyrogram import Client, filters
@@ -72,6 +72,32 @@ def creat_text_image(text, font_path, font_size, position, text_color):
 
     return image
 
+def trim(im):
+    bg = Image.new(im.mode, im.size, im.getpixel((0,0)))
+    size = im.size
+    
+    top_left_pixel = im.getpixel((0,0))
+    bottom_right_pixel = im.getpixel((size[0] - 1, size[1] - 1))
+    
+    is_top_left_white = top_left_pixel[0] >= 240 and top_left_pixel[1] >= 240 and top_left_pixel[2]
+    is_bottom_right_white = bottom_right_pixel[0] >= 240 and bottom_right_pixel[1] >= 240 and bottom_right_pixel[2] >= 240
+    
+    is_top_left_transparent = top_left_pixel[3] < 20 if len(top_left_pixel) > 3 else False
+    is_bottom_right_transparent = bottom_right_pixel[3] < 20 if len(bottom_right_pixel) > 3 else False
+    
+    if (is_top_left_white and is_bottom_right_white) or (is_top_left_transparent and is_bottom_right_transparent):
+        diff = ImageChops.difference(im, bg)
+        offset = round(size[1] / 300 * 4);
+        diff = ImageChops.add(diff, diff, 2.0, -100)
+        bbox = diff.getbbox()
+        if bbox:
+            return im.crop((max(bbox[0] - offset, 0), max(bbox[1] - offset, 0), min(bbox[2] + offset, size[0]), min(bbox[3] + offset, size[1])))
+        else:
+            return im
+    else:
+        print('No change because no transparency or no white background')
+        return im
+
 
 def compose_images_vertical(image1_path, image2_path, watermark, gradient):
     image1 = resize_with_keep_aspect_ratio(image1_path, 1080)
@@ -89,5 +115,7 @@ def compose_images_vertical(image1_path, image2_path, watermark, gradient):
     return composed_image
 
 
-# ali =creat_text_image("علی نوری" ,(font_path) , 60 , (500,500) , "white")
-# ali.save("./test.png")
+ali =creat_text_image("علی نوری" ,(font_path) , 60 , (500,500) , "white")
+ali = trim(ali)
+ali.save("./test.png")
+
