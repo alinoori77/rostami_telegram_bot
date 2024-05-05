@@ -3,3 +3,4 @@ config.py
 /__pycache__
 mohandes_rostami_bot.session
 mohandes_rostami_bot.session-journal
+/downloads
