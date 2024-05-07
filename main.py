@@ -81,7 +81,7 @@ def creat_text_image(text, font_path, font_size, position, text_color):
 
         x += (text_width - line_width) / 2
 
-        letter_spacing = -1
+        letter_spacing = -2
         line_spacing = 25
 
         for char in line:
@@ -131,7 +131,7 @@ def compose_images_vertical(image1, image2, watermark, gradient):
 
     composed_image.paste(image1, (0, 0))
     composed_image.paste(image2, (0, 810))
-    composed_image = paste_with_alpha(composed_image, watermark, (300, 563))
+    composed_image = paste_with_alpha(composed_image, watermark, (300, 673))
     composed_image = paste_with_alpha(composed_image, gradient, (0, 0))
 
     return composed_image
@@ -178,6 +178,13 @@ async def download_story_pic(client, message):
 async def story(client, message):
     await client.send_message(chat_id=message.chat.id, text="متن استوری را ارسال کنید")
 
+
+@app.on_message(filters.regex("خالی کردن حافظه"))
+async def story(client, message):
+    files = os.listdir(Base_dir + "/downloads")
+    [file for file in files if os.remove(Base_dir+f"/downloads/{file}")]
+    await app.send_message(message.chat.id , "حافظه با موفقیت خالی شد.")
+    
 @app.on_message(filters.text)
 async def download_story_pic(client, message):
     last_message = await app.get_messages(message.chat.id, int(message.id)-1)
@@ -191,7 +198,10 @@ async def download_story_pic(client, message):
             output_path = f"composed_image_{i}.png"
             image= compose_images_vertical(image1, image2 , watermark , gradient)
             text_image = trim_empty_pixel(creat_text_image(message.text , font_path , 60 , (500,500) , "white"))
-            image = paste_with_alpha(image , text_image , (500,500))
-            
-
+            image = paste_with_alpha(image , text_image , ((image.width - text_image.width) // 2 ,1600))
+            image.save(output_path)
+            os.remove(image1_path)
+            os.remove(image2_path)
+            await app.send_document(message.chat.id , Base_dir+f"/{output_path}")
+            os.remove(Base_dir+f"/{output_path}")
 app.run()
