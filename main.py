@@ -163,30 +163,30 @@ async def start_command(client, message):
         await client.send_message(chat_id=message.chat.id, text=text, reply_markup=reply_markup)
 
 
-@app.on_message(filters.regex("ارسال عکس"))
-async def story(client, message):
+@app.on_message(filters.regex("ارسال عکس"), group=2)
+async def get_pic(client, message):
     await client.send_message(chat_id=message.chat.id, text="لطفا عکس ها را ارسال کنید")
 
-@app.on_message(filters.document)
+@app.on_message(filters.document, group=3)
 async def download_story_pic(client, message):
     last_message = await app.get_messages(message.chat.id, int(message.id)-1)
     if last_message.text == "لطفا عکس ها را ارسال کنید" or str(last_message.media) == "MessageMediaType.DOCUMENT":
         await client.download_media(message)
         await client.send_message(chat_id=message.chat.id, text="عکس ها با موفقیت دانلود شد ")
 
-@app.on_message(filters.regex("ساخت استوری"))
-async def story(client, message):
+@app.on_message(filters.regex("ساخت استوری"), group=4)
+async def creat_story(client, message):
     await client.send_message(chat_id=message.chat.id, text="متن استوری را ارسال کنید")
 
 
-@app.on_message(filters.regex("خالی کردن حافظه"))
-async def story(client, message):
+@app.on_message(filters.regex("خالی کردن حافظه"), group=5)
+async def clear_cach(client, message):
     files = os.listdir(Base_dir + "/downloads")
     [file for file in files if os.remove(Base_dir+f"/downloads/{file}")]
     await app.send_message(message.chat.id , "حافظه با موفقیت خالی شد.")
     
-@app.on_message(filters.text)
-async def download_story_pic(client, message):
+@app.on_message(filters.text, group=6)
+async def sent_story_pic(client, message):
     last_message = await app.get_messages(message.chat.id, int(message.id)-1)
     if last_message.text == "متن استوری را ارسال کنید" :
         files = os.listdir(Base_dir + "/downloads")
@@ -204,4 +204,21 @@ async def download_story_pic(client, message):
             os.remove(image2_path)
             await app.send_document(message.chat.id , Base_dir+f"/{output_path}")
             os.remove(Base_dir+f"/{output_path}")
+
+
+@app.on_message(filters.regex('ساخت پست'), group=7)
+async def sent_post_pic(client, message):
+    files = os.listdir(Base_dir + "/downloads")
+    for i in range(0, len(files)):
+        image1_path=Base_dir+ f"/downloads/{files[i]}"
+        image1 = resize_with_keep_aspect_ratio(crop_to_4_3(Image.open(image1_path)),1080)
+        output_path = f"composed_image_{i}.png"
+        watermark_obj = Image.open(watermark)
+        image = paste_with_alpha(image1 , resize_with_keep_aspect_ratio(watermark_obj , 310) , (30 , 650))
+        image.save(output_path)
+        os.remove(image1_path)
+        await app.send_document(message.chat.id , Base_dir+f"/{output_path}")
+        os.remove(Base_dir+f"/{output_path}")
+
+
 app.run()
